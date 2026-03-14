@@ -59,9 +59,9 @@ internal class PawnMoveValidator : IMoveValidator
 
         bool valid =
             enPassantSquare is not null
+            && move.To == enPassantSquare
             && move.IsDiagonal()
             && move.OffsetRank == game.TurnPlayer.Player.RankDirection()
-            && move.To.File == enPassantSquare.Value.File
             && !game.TryGetTargetPiece(move, out _);
 
         type = valid ? MoveType.EnPassant : null;

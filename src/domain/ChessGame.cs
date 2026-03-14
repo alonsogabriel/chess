@@ -62,7 +62,7 @@ public class ChessGame
         }
         else if (type == MoveType.DoubleStep)
         {
-            WaitingPlayer.AvailableEnPassantSquare = move.To;
+            WaitingPlayer.AvailableEnPassantSquare = move.To.AddRanks(WaitingPlayer.Player.RankDirection());
         }
         TurnPlayer.AvailableEnPassantSquare = null;
         ChangeTurnPlayer();

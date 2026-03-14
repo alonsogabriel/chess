@@ -7,21 +7,21 @@ public class ChessBoard
 {
     public readonly ChessGamePiece?[,] _pieces;
 
-    public const int STANDARD_FILES = 8;
-    public const int STANDARD_RANKS = 8;
+    public const int TOTAL_FILES = 8;
+    public const int TOTAL_RANKS = 8;
 
     public ChessBoard(int files, int ranks)
     {
-        if (files != STANDARD_FILES)
+        if (files != TOTAL_FILES)
             throw new ArgumentException("Number of files not supported", nameof(files));
 
-        if (ranks != STANDARD_RANKS)
+        if (ranks != TOTAL_RANKS)
             throw new ArgumentException("Number of ranks not supported", nameof(ranks));
 
         _pieces = new ChessGamePiece?[ranks, files];
     }
 
-    public static ChessBoard Standard() => new(STANDARD_FILES, STANDARD_RANKS);
+    public static ChessBoard Standard() => new(TOTAL_FILES, TOTAL_RANKS);
 
     public static ChessPiece[] StandardBackRankSet => [
         ChessPiece.Rook,
@@ -37,17 +37,17 @@ public class ChessBoard
     // TODO move to Standard Chess Game?
     public void Reset()
     {
-        for (int rank = 0; rank < STANDARD_RANKS; rank++)
+        for (int rank = 0; rank < TOTAL_RANKS; rank++)
         {
-            var player = rank is 0 or 1 ? ChessGamePlayer.Player2 : ChessGamePlayer.Player1;
-            var pieces = new ChessPiece[STANDARD_FILES];
+            var player = rank < 2 ? ChessGamePlayer.Player2 : ChessGamePlayer.Player1;
+            var pieces = new ChessPiece[TOTAL_FILES];
             var emptyRank = false;
 
-            if (rank is 0 or STANDARD_FILES - 1)
+            if (rank == 0 || rank == TOTAL_FILES - 1)
             {
                 pieces = StandardBackRankSet;
             }
-            else if (rank is 1 or STANDARD_RANKS - 2)
+            else if (rank == 1 || rank == TOTAL_RANKS - 2)
             {
                 Array.Fill(pieces, ChessPiece.Pawn);
             }
@@ -56,7 +56,7 @@ public class ChessBoard
                 emptyRank = true;
             }
 
-            for (int file = 0; file < STANDARD_FILES; file++)
+            for (int file = 0; file < TOTAL_FILES; file++)
             {
                 _pieces[rank, file] = emptyRank ? null : new(pieces[file], player);
             }
@@ -70,7 +70,7 @@ public class ChessBoard
         if (!RemovePiece(move.From, out movedPiece))
             return false;
 
-        PutPiece(movedPiece.Value, move.To, out removedPiece);        
+        PutPiece(movedPiece.Value, move.To, out removedPiece);
 
         return true;
     }
@@ -100,12 +100,34 @@ public class ChessBoard
         return false;
     }
 
+    public bool PathIsBlocked(MoveSpan move)
+    {
+        if (!move.IsOrthogonal() && !move.IsDiagonal())
+            return false;
+
+        var (rank, file) = move.Offset;
+        var steps = Math.Max(Math.Abs(rank), Math.Abs(file));
+
+        var dy = Math.Sign(rank);
+        var dx = Math.Sign(file);
+
+        for (int i = 1; i < steps; i++)
+        {
+            int x = move.From.File + dx * i;
+            int y = move.From.Rank + dy * i;
+            if (_pieces[y, x] is not null)
+                return true;
+        }
+
+        return false;
+    }
+
     public override string ToString()
     {
-        var sb = new StringBuilder(STANDARD_FILES * STANDARD_RANKS * 3);
-        for (int rank = 0; rank < STANDARD_RANKS; rank++)
+        var sb = new StringBuilder(TOTAL_FILES * TOTAL_RANKS * 3);
+        for (int rank = 0; rank < TOTAL_RANKS; rank++)
         {
-            for (int file = 0; file < STANDARD_FILES; file++)
+            for (int file = 0; file < TOTAL_FILES; file++)
             {
                 sb.Append(_pieces[rank, file]?.ToString() ?? "--").Append(' ');
             }

@@ -2,12 +2,12 @@
 
 public enum ChessPiece
 {
-    Pawn,
-    Knight,
-    Bishop,
-    Rook,
+    King,
     Queen,
-    King
+    Rook,
+    Bishop,
+    Knight,
+    Pawn,
 }
 
 public enum ChessGamePlayer

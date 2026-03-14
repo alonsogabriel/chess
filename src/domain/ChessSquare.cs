@@ -16,7 +16,7 @@ public readonly record struct ChessSquare
             return new();
 
         var file = (value[0] - 'A') % 32;
-        var rank = ChessBoard.STANDARD_RANKS - (value[1] - '0');
+        var rank = ChessBoard.TOTAL_RANKS - (value[1] - '0');
 
         return new(file, rank);
     }
@@ -30,5 +30,5 @@ public readonly record struct ChessSquare
 
         return new string([file, rank]);
     }
-    private static int InRange(int value) => Math.Max(Math.Min(value, ChessBoard.STANDARD_FILES - 1), 0);
+    private static int InRange(int value) => Math.Max(Math.Min(value, ChessBoard.TOTAL_FILES - 1), 0);
 }

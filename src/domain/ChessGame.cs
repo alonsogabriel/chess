@@ -6,6 +6,7 @@ namespace Chess.Domain;
 public class ChessGame
 {
     private readonly ChessBoard _board;
+    private readonly List<IChessGameEvent> _events = [];
     private ChessGamePlayer _turnPlayer;
 
     private static readonly Dictionary<ChessPiece, IMoveValidator> _moveValidators = new()
@@ -65,7 +66,29 @@ public class ChessGame
             WaitingPlayer.AvailableEnPassantSquare = move.To.AddRanks(WaitingPlayer.Player.RankDirection());
         }
         TurnPlayer.AvailableEnPassantSquare = null;
+
+        // TODO revert if move gets king in check
+        var data = new MoveInfo
+        {
+            Move = move,
+            Type = type,
+            MovedPiece = movedPiece!.Value,
+            CapturedPiece = targetPiece
+        };
+
+        Raise(new ChessGameMoveEvent(data));
+
         ChangeTurnPlayer();
+    }
+
+    private void Raise(IChessGameEvent @event)
+    {
+        _events.Add(@event);
+
+        if (@event is ChessGameMoveEvent move)
+        {
+            OnMove?.Invoke(move);
+        }
     }
 
     public bool TryGetPiece(ChessSquare square, [NotNullWhen(true)] out ChessGamePiece? piece)
@@ -98,10 +121,33 @@ public class ChessGame
         return _board.ToString();
     }
 
+    public ChessGameMoveAction? OnMove { get; set; }
+
     private void ChangeTurnPlayer()
     {
         _turnPlayer = _turnPlayer.IsPlayer1() ?
             ChessGamePlayer.Player2 :
             ChessGamePlayer.Player1;
     }
+}
+
+public delegate void ChessGameMoveAction(ChessGameMoveEvent @event);
+
+public class MoveInfo
+{
+    public MoveSpan Move { get; internal init; }
+    public ChessGamePiece MovedPiece { get; internal init; }
+    public ChessGamePiece? CapturedPiece { get; internal init; }
+    public MoveType Type { get; internal init; }
+}
+
+public interface IChessGameEvent
+{
+    Guid Id { get; }
+}
+
+public sealed class ChessGameMoveEvent(MoveInfo _data) : IChessGameEvent
+{
+    public Guid Id { get; } = Guid.NewGuid();
+    public MoveInfo Data => _data;
 }

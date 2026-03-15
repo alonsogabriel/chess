@@ -1,5 +1,6 @@
 ﻿using Chess.Console;
 using Chess.Domain;
+using Chess.Domain.Moves;
 
 Tests.TestGame();
 
@@ -46,7 +47,16 @@ public static class Tests
         var boardConsole = new ChessBoardConsole(game);
         var control = new ChessBoardControl();
 
-        control.OnChangeSquare = (previous, current) =>
+        game.OnMove += (ev) =>
+        {
+            if (ev.Data.Type == MoveType.EnPassant)
+            {
+                var enPassantSquare = ev.Data.Move.To.AddRanks(game.WaitingPlayer.Player.RankDirection());
+                boardConsole.WriteSquare(enPassantSquare);
+            }
+        };
+
+        control.OnChangeSquare += (previous, current) =>
         {
             if (previous != control.SelectedSquare)
             {
@@ -58,7 +68,7 @@ public static class Tests
             }
         };
 
-        control.OnPressSelect = (selected) =>
+        control.OnPressSelect += (selected) =>
         {
             if (!game.TryGetTurnPlayerPiece(selected, out _))
             {
@@ -69,7 +79,7 @@ public static class Tests
             boardConsole.WriteSquare(selected, ChessBoardSquareAppearence.Selected);
         };
 
-        control.OnCompleteMove = (move) =>
+        control.OnCompleteMove += (move) =>
         {
             if (game.Move(move))
             {

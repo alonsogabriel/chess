@@ -1,4 +1,6 @@
-﻿namespace Chess.Domain;
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace Chess.Domain;
 
 public readonly record struct ChessSquare
 {
@@ -7,6 +9,27 @@ public readonly record struct ChessSquare
     {
         File = InRange(file);
         Rank = InRange(rank);
+    }
+
+    public static bool TryCreate(int file, int rank, [NotNullWhen(true)] out ChessSquare? square)
+    {
+        square = null;
+
+        if (file < 0 || file + 1 > ChessBoard.TOTAL_FILES)
+            return false;
+
+        if (rank < 0 || rank + 1 > ChessBoard.TOTAL_RANKS)
+            return false;
+
+        square = new() { File = file, Rank = rank };
+
+        return true;
+    }
+
+    public static ChessSquare? TryCreate(int file, int rank)
+    {
+        TryCreate(file, rank, out var square);
+        return square;
     }
 
     public static ChessSquare From(string value)

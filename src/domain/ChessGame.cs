@@ -116,6 +116,38 @@ public class ChessGame
         return _board.PathIsBlocked(move);
     }
 
+    public List<(ChessSquare from, ChessGamePiece piece)> FindPiecesAttackingSquare(ChessSquare square, ChessGamePlayer player)
+    {
+        var list = new List<(ChessSquare from, ChessGamePiece piece)>();
+        
+        (int y, int x)[] knightMap = [
+            (-1,-2),
+            (-2,-1),
+            (-2, 1),
+            (-1, 2),
+            ( 1, 2),
+            ( 2, 1),
+            ( 2,-1),
+            ( 1,-2),
+        ];
+
+        foreach (var (y, x) in knightMap)
+        {
+            if (!ChessSquare.TryCreate(square.File + x, square.Rank + y, out var sq))
+                continue;
+
+            if (!TryGetPiece(square, out var piece))
+                continue;
+
+            if (!piece.Value.IsKnight() || piece.Value.Player != player)
+                continue;
+
+            list.Add((sq.Value, piece.Value));
+        }
+
+        return list;
+    }
+
     public override string ToString()
     {
         return _board.ToString();

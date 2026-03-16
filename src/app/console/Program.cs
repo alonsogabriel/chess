@@ -1,4 +1,5 @@
-﻿using Chess.Console;
+﻿using System.Drawing;
+using Chess.Console;
 using Chess.Domain;
 using Chess.Domain.Moves;
 
@@ -43,8 +44,38 @@ public static class Tests
     {
         System.Console.Clear();
         System.Console.CursorVisible = false;
+
+        SelectItem[] colorItems = [new("Board Color 1", 1), new("Board Color 2", 2), new("Player 1 Color", 3), new("Player 2 Color", 4)];
+        new ConsoleSelect<SelectItem>(colorItems).Select();
+
+        var colorSelect = new ConsoleColorSelect(new() { Top = 2 });
+
+        colorSelect.OnChange += (value) =>
+        {
+            // System.Console.SetCursorPosition(0, 3);
+            // System.Console.WriteLine(value.ToString().PadRight(30));
+
+            new ConsoleChessBoard(new(), new() { BoardColor1 = value, Top = 4 }).Write();
+        };
+
+        colorSelect.OnSelect += (value) =>
+        {
+            System.Console.SetCursorPosition(0, 4);
+            System.Console.WriteLine("Selected!");
+        };
+
+        colorSelect.Select();
+        // return;
+
+        Chess.Console.Utils.ReadKey();
+
+        var options = new ChessBoardConsoleOptions
+        {
+
+        };
+
         var game = new ChessGame();
-        var boardConsole = new ChessBoardConsole(game);
+        var boardConsole = new ConsoleChessBoard(game);
         var control = new ChessBoardControl();
 
         game.OnMove += (ev) =>
@@ -92,7 +123,7 @@ public static class Tests
 
         while (true)
         {
-            if (control.Read(out var key))
+            if (control.Read())
             {
             }
         }

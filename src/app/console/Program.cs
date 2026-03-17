@@ -1,9 +1,10 @@
-﻿using System.Drawing;
+﻿using System.ComponentModel;
+using System.Text.Json;
 using Chess.Console;
 using Chess.Domain;
 using Chess.Domain.Moves;
 
-Tests.TestGame();
+await Tests.TestGame();
 
 public static class Tests
 {
@@ -40,42 +41,17 @@ public static class Tests
         }
     }
 
-    public static void TestGame()
+    public static async Task TestGame()
     {
         System.Console.Clear();
         System.Console.CursorVisible = false;
 
-        SelectItem[] colorItems = [new("Board Color 1", 1), new("Board Color 2", 2), new("Player 1 Color", 3), new("Player 2 Color", 4)];
-        new ConsoleSelect<SelectItem>(colorItems).Select();
+        var boardOptions = await new ConsoleChessOptionsInitializer().Initialize();
 
-        var colorSelect = new ConsoleColorSelect(new() { Top = 2 });
-
-        colorSelect.OnChange += (value) =>
-        {
-            // System.Console.SetCursorPosition(0, 3);
-            // System.Console.WriteLine(value.ToString().PadRight(30));
-
-            new ConsoleChessBoard(new(), new() { BoardColor1 = value, Top = 4 }).Write();
-        };
-
-        colorSelect.OnSelect += (value) =>
-        {
-            System.Console.SetCursorPosition(0, 4);
-            System.Console.WriteLine("Selected!");
-        };
-
-        colorSelect.Select();
-        // return;
-
-        Chess.Console.Utils.ReadKey();
-
-        var options = new ChessBoardConsoleOptions
-        {
-
-        };
+        System.Console.Clear();
 
         var game = new ChessGame();
-        var boardConsole = new ConsoleChessBoard(game);
+        var boardConsole = new ConsoleChessBoard(game, boardOptions);
         var control = new ChessBoardControl();
 
         game.OnMove += (ev) =>
@@ -128,5 +104,15 @@ public static class Tests
             }
         }
     }
+}
+
+public enum ChessBoardColorComponent
+{
+    Square1,
+    Square2,
+    Player1,
+    Player2,
+    SelectedSquare,
+    HighlightedSquare
 }
 

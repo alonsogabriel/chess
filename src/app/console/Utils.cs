@@ -10,4 +10,23 @@ public static class Utils
 
         return Math.Min(Math.Max(value, min), max);
     }
+
+    public static SelectItem[] ChessBoardComponentColorItems()
+    {
+        return [.. Enum.GetValues<ChessBoardColorComponent>().Select(c => new SelectItem(c.Label(), (int)c))];
+    }
+
+    private static string Label(this ChessBoardColorComponent component)
+    {
+        return component switch
+        {
+            ChessBoardColorComponent.Square1 => "Square 1",
+            ChessBoardColorComponent.Square2 => "Square 2",
+            ChessBoardColorComponent.Player1 => "Player 1",
+            ChessBoardColorComponent.Player2 => "Player 2",
+            ChessBoardColorComponent.SelectedSquare => "Selected Square",
+            ChessBoardColorComponent.HighlightedSquare => "Highlighted Square",
+            _ => string.Empty
+        };
+    }
 }

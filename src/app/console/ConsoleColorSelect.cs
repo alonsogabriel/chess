@@ -21,14 +21,14 @@ public class ConsoleColorSelect(ConsoleColorSelectOptions _options)
     {
         var control = SequentialControl.Horizontal(_colors.Length);
 
-        control.OnInput += _ =>
+        control.OnInput += (ctrl, _) =>
         {
             int lastIndex = _colorIndex;
-            _colorIndex = control.X;
+            _colorIndex = ctrl.X;
             OnChangeIndex(lastIndex);
         };
 
-        control.OnSelect += () => OnSelect?.Invoke(Value);
+        control.OnSelect += _ => OnSelect?.Invoke(Value);
 
         return control;
     }

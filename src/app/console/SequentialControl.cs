@@ -20,20 +20,24 @@ public class SequentialControl(int yCount, int xCount, int y, int x, SequentialC
     public void Read()
     {
         while (Input()) ;
-
-        OnSelect?.Invoke();
     }
 
-    public Action<ConsoleKey>? OnInput { get; set; }
-    public Action? OnSelect { get; set; }
+    public Action<SequentialControl, ConsoleKey>? OnInput { get; set; }
+    public Action<SequentialControl>? OnSelect { get; set; }
 
     private bool Input()
     {
-        ConsoleKey key = Utils.ReadKey();
+        var key = Utils.ReadKey();
         HandleInput(key);
-        OnInput?.Invoke(key);
+        OnInput?.Invoke(this, key);
 
-        return key != keys.Select;
+        if (key == keys.Select)
+        {
+            OnSelect?.Invoke(this);
+            return false;
+        }
+
+        return !keys.Escape.Contains(key);
     }
 
     private void HandleInput(ConsoleKey key)
@@ -80,4 +84,5 @@ public record class SequentialControlKeys
     public ConsoleKey Down { get; init; } = ConsoleKey.DownArrow;
     public ConsoleKey Left { get; init; } = ConsoleKey.LeftArrow;
     public ConsoleKey Select { get; init; } = ConsoleKey.Spacebar;
+    public ConsoleKey[] Escape { get; init; } = [];
 }

@@ -11,8 +11,34 @@ public enum ChessBoardSquareAppearence
 
 public class ConsoleChessBoard(ChessGame game, ConsoleChessBoardOptions options)
 {
+    public const int BOARD_TOP = 2;
     public ConsoleChessBoard(ChessGame game) : this(game, new()) { }
     public void Write()
+    {
+        WriteBoard();
+        WriteCapturedPieces(game.TurnPlayer);
+        WriteCapturedPieces(game.WaitingPlayer);
+    }
+
+    public void WriteCapturedPieces(PlayerInfo player)
+    {
+        int top = player.Player == ChessGamePlayer.Player1 ?
+            BOARD_TOP + ChessBoard.TOTAL_RANKS :
+            BOARD_TOP - 1;
+
+        System.Console.SetCursorPosition(options.Left, options.Top + top);
+        System.Console.ResetColor();
+        SetForegroundColor(player.Player.Adversary());
+        System.Console.Write(StringifyCapturedPieces(player));
+    }
+
+    private static string StringifyCapturedPieces(PlayerInfo player)
+    {
+        var symbols = player.CapturedPieces.Order().Select(c => c.Symbol()).ToArray();
+        return new string(symbols).PadRight(20);
+    }
+
+    public void WriteBoard()
     {
         for (int rank = 0; rank < ChessBoard.TOTAL_RANKS; rank++)
         {
@@ -27,7 +53,7 @@ public class ConsoleChessBoard(ChessGame game, ConsoleChessBoardOptions options)
     {
         if (game.TryGetPiece(square, out var piece))
         {
-            SetForegroundColor(piece.Value);
+            SetForegroundColor(piece.Value.Player);
         }
 
         SetBackgroundColor(square, appearence);
@@ -35,13 +61,13 @@ public class ConsoleChessBoard(ChessGame game, ConsoleChessBoardOptions options)
     }
     private void WriteSquareContent(ChessSquare square, ChessGamePiece? piece)
     {
-        System.Console.SetCursorPosition(options.Left + square.File * 2, options.Top + square.Rank);
+        System.Console.SetCursorPosition(options.Left + square.File * 2, options.Top + square.Rank + BOARD_TOP);
         var content = piece?.Piece.Symbol() ?? ' ';
         System.Console.Write(new string([content, ' ']));
     }
-    private void SetForegroundColor(ChessGamePiece piece)
+    private void SetForegroundColor(ChessGamePlayer player)
     {
-        System.Console.ForegroundColor = piece.Player.IsPlayer1() ?
+        System.Console.ForegroundColor = player.IsPlayer1() ?
             options.Player1Color :
             options.Player2Color;
     }

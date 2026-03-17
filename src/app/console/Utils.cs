@@ -1,4 +1,7 @@
-﻿namespace Chess.Console;
+﻿using System.Diagnostics.CodeAnalysis;
+using Chess.Domain;
+
+namespace Chess.Console;
 
 public static class Utils
 {

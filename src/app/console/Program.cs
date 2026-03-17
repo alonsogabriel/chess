@@ -61,6 +61,11 @@ public static class Tests
                 var enPassantSquare = ev.Data.Move.To.AddRanks(game.WaitingPlayer.Player.RankDirection());
                 boardConsole.WriteSquare(enPassantSquare);
             }
+
+            if (ev.Data.CapturedPiece.HasValue)
+            {
+                boardConsole.WriteCapturedPieces(game.TurnPlayer);
+            }
         };
 
         control.OnChangeSquare += (previous, current) =>
@@ -73,11 +78,17 @@ public static class Tests
             {
                 boardConsole.WriteSquare(current, ChessBoardSquareAppearence.Highlighted);
             }
+
+            var attacking = game.FindPiecesThatCanMoveToSquare(current, game.TurnPlayer.Player).Select(item => $"{item.Value.Symbol()}{item.Key}");
+            var attackingStr = string.Join(", ", attacking).PadRight(32);
+            Console.ResetColor();
+            Console.SetCursorPosition(20, 0);
+            Console.Write(attackingStr);
         };
 
         control.OnPressSelect += (selected) =>
         {
-            if (!game.TryGetTurnPlayerPiece(selected, out _))
+            if (!game.TryGetOwnedPiece(selected, out _))
             {
                 control.UnselectSquare();
                 return;

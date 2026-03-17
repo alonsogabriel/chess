@@ -36,6 +36,7 @@ public class ConsoleChessOptionsInitializer
 
         colorComponentSelect.Select();
 
+        options = options with { Top = 0 };
         await SaveOptionsAsync(options);
 
         return options;

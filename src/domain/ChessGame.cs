@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using Chess.Domain.Moves;
 
 namespace Chess.Domain;
@@ -9,16 +10,6 @@ public class ChessGame
     private readonly List<IChessGameEvent> _events = [];
     private ChessGamePlayer _turnPlayer;
 
-    private static readonly Dictionary<ChessPiece, IMoveValidator> _moveValidators = new()
-    {
-        [ChessPiece.Pawn] = new PawnMoveValidator(),
-        [ChessPiece.Knight] = new KnightMoveValidator(),
-        [ChessPiece.Bishop] = new BishopMoveValidator(),
-        [ChessPiece.Rook] = new RookMoveValidator(),
-        [ChessPiece.Queen] = new QueenMoveValidator(),
-        [ChessPiece.King] = new KingMoveValidator()
-    };
-
     public ChessGame()
     {
         _board = ChessBoard.Standard();
@@ -26,6 +17,25 @@ public class ChessGame
         Player1 = new PlayerInfo { Player = ChessGamePlayer.Player1, Name = nameof(Player1) };
         Player2 = new PlayerInfo { Player = ChessGamePlayer.Player2, Name = nameof(Player2) };
         _turnPlayer = ChessGamePlayer.Player1;
+        MapPieces();
+    }
+
+    private void MapPieces()
+    {
+        for (int i = 0; i < ChessBoard.TOTAL_RANKS; i++)
+        {
+            for (int j = 0; j < ChessBoard.TOTAL_FILES; j++)
+            {
+                var sq = new ChessSquare(j, i);
+                if (_board.TryGetPiece(sq, out var piece))
+                {
+                    var player = piece.Value.Player.IsPlayer1() ?
+                        Player1 : Player2;
+
+                    player.MapPiece(sq, piece.Value.Piece);
+                }
+            }
+        }
     }
 
     public PlayerInfo TurnPlayer => _turnPlayer.IsPlayer1() ? Player1 : Player2;
@@ -35,15 +45,10 @@ public class ChessGame
 
     public bool Move(MoveSpan move)
     {
-        if (!TryGetTurnPlayerPiece(move.From, out var movedPiece))
+        if (!_board.TryGetPiece(move.From, out var movedPiece))
             return false;
 
-        if (TryGetTurnPlayerPiece(move.To, out _))
-            return false;
-
-        var validator = _moveValidators[movedPiece.Value.Piece];
-
-        if (validator.MoveIsValid(move, this, out var type))
+        if (MoveValidator.From(movedPiece.Value).IsValid(move, this, out var type))
         {
             HandleValidMove(move, type.Value);
             return true;
@@ -54,7 +59,9 @@ public class ChessGame
 
     private void HandleValidMove(MoveSpan move, MoveType type)
     {
-        _board.TryMovePiece(move, out var movedPiece, out var targetPiece);
+        if (!_board.TryMovePiece(move, out var movedPiece, out var targetPiece))
+            return;
+
         if (type == MoveType.EnPassant)
         {
             // TODO Handle En passant => remove piece from en passant square and update
@@ -65,14 +72,23 @@ public class ChessGame
         {
             WaitingPlayer.AvailableEnPassantSquare = move.To.AddRanks(WaitingPlayer.Player.RankDirection());
         }
+
+        TurnPlayer.RemovePiece(move.From);
+        TurnPlayer.MapPiece(move.To, movedPiece.Value.Piece);
         TurnPlayer.AvailableEnPassantSquare = null;
+
+        if (targetPiece.HasValue)
+        {
+            TurnPlayer.AddCapturedPiece(targetPiece.Value.Piece);
+            WaitingPlayer.RemovePiece(move.To);
+        }
 
         // TODO revert if move gets king in check
         var data = new MoveInfo
         {
             Move = move,
             Type = type,
-            MovedPiece = movedPiece!.Value,
+            MovedPiece = movedPiece.Value,
             CapturedPiece = targetPiece
         };
 
@@ -96,56 +112,39 @@ public class ChessGame
         return _board.TryGetPiece(square, out piece);
     }
 
-    public bool TryGetMovedPiece(MoveSpan move, [NotNullWhen(true)] out ChessGamePiece? piece)
-    {
-        return _board.TryGetPiece(move.From, out piece);
-    }
-
-    public bool TryGetTargetPiece(MoveSpan move, [NotNullWhen(true)] out ChessGamePiece? piece)
-    {
-        return _board.TryGetPiece(move.To, out piece);
-    }
-
-    public bool TryGetTurnPlayerPiece(ChessSquare square, [NotNullWhen(true)] out ChessGamePiece? piece)
-    {
-        return _board.TryGetPiece(square, out piece) && piece.Value.Player == TurnPlayer.Player;
-    }
-
     public bool PathIsBlocked(MoveSpan move)
     {
         return _board.PathIsBlocked(move);
     }
 
-    public List<(ChessSquare from, ChessGamePiece piece)> FindPiecesAttackingSquare(ChessSquare square, ChessGamePlayer player)
+    public PlayerInfo GetPlayerInfo(ChessGamePlayer player)
     {
-        var list = new List<(ChessSquare from, ChessGamePiece piece)>();
-        
-        (int y, int x)[] knightMap = [
-            (-1,-2),
-            (-2,-1),
-            (-2, 1),
-            (-1, 2),
-            ( 1, 2),
-            ( 2, 1),
-            ( 2,-1),
-            ( 1,-2),
-        ];
+        if (!Enum.IsDefined(player))
+            throw new InvalidEnumArgumentException();
 
-        foreach (var (y, x) in knightMap)
+        return player.IsPlayer1() ? Player1 : Player2;
+    }
+
+    public Dictionary<ChessSquare, ChessPiece> FindPiecesThatCanMoveToSquare(ChessSquare square, ChessGamePlayer player)
+    {
+        var pieces = GetPlayerInfo(player).PieceMapping.Where(map =>
         {
-            if (!ChessSquare.TryCreate(square.File + x, square.Rank + y, out var sq))
-                continue;
+            var move = new MoveSpan(From: map.Key, To: square);
+            return MoveValidator.From(map.Value).IsValid(move, this, out _);
+        });
 
-            if (!TryGetPiece(square, out var piece))
-                continue;
+        return pieces.ToDictionary();
+    }
 
-            if (!piece.Value.IsKnight() || piece.Value.Player != player)
-                continue;
+    public Dictionary<ChessSquare, ChessPiece> FindPiecesAttackingSquare(ChessSquare square, ChessGamePlayer player)
+    {
+        var pieces = GetPlayerInfo(player).PieceMapping.Where(map =>
+        {
+            // TODO simulation/do not consider existing piece on target square
+            return false;
+        });
 
-            list.Add((sq.Value, piece.Value));
-        }
-
-        return list;
+        return pieces.ToDictionary();
     }
 
     public override string ToString()
@@ -157,9 +156,7 @@ public class ChessGame
 
     private void ChangeTurnPlayer()
     {
-        _turnPlayer = _turnPlayer.IsPlayer1() ?
-            ChessGamePlayer.Player2 :
-            ChessGamePlayer.Player1;
+        _turnPlayer = _turnPlayer.Adversary();
     }
 }
 

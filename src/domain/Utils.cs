@@ -1,4 +1,8 @@
-﻿namespace Chess.Domain;
+﻿using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection.Emit;
+
+namespace Chess.Domain;
 
 public static class Utils
 {
@@ -114,5 +118,41 @@ public static class Utils
     public static ChessSquare Add(this ChessSquare square, int files, int ranks)
     {
         return new(square.File + files, square.Rank + ranks);
+    }
+
+    public static ChessGamePlayer Adversary(this ChessGamePlayer player)
+    {
+        if (!Enum.IsDefined(player))
+            throw new InvalidEnumArgumentException();
+
+        return player.IsPlayer1() ? ChessGamePlayer.Player2 : ChessGamePlayer.Player1;
+    }
+
+    public static bool TryGetOwnedPieceAndValidTarget(this ChessGame game, MoveSpan move,
+        [NotNullWhen(true)] out ChessGamePiece? moved, out ChessGamePiece? target)
+    {
+        target = null;
+        
+        if (!game.TryGetOwnedPiece(move.From, out moved))
+            return false;
+
+        if (game.TryGetPiece(move.To, out target) &&
+            target.Value.Player == game.TurnPlayer.Player)
+            return false;
+
+        return true;
+    }
+
+    public static bool TryGetOwnedPiece(this ChessGame game, ChessSquare square,
+        [NotNullWhen(true)] out ChessGamePiece? piece)
+    {
+        if (game.TryGetPiece(square, out piece) && piece.Value.Player == game.TurnPlayer.Player)
+        {
+            return true;
+        }
+
+        piece = null;
+
+        return false;
     }
 }

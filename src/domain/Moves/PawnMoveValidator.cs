@@ -4,11 +4,11 @@ namespace Chess.Domain.Moves;
 
 internal class PawnMoveValidator : IMoveValidator
 {
-    public bool MoveIsValid(MoveSpan move, ChessGame game, [NotNullWhen(true)] out MoveType? type)
+    public bool IsValid(MoveSpan move, ChessGame game, [NotNullWhen(true)] out MoveType? type)
     {
         type = null;
 
-        if (!game.TryGetMovedPiece(move, out var piece) || !piece.Value.IsPawn())
+        if (!game.TryGetOwnedPiece(move.From, out var piece) || !piece.Value.IsPawn())
             return false;
 
         return IsSimple(move, game, out type)
@@ -21,7 +21,7 @@ internal class PawnMoveValidator : IMoveValidator
     {
         bool valid = move.IsVertical()
             && move.OffsetRank == game.TurnPlayer.Player.RankDirection()
-            && !game.TryGetTargetPiece(move, out _);
+            && !game.TryGetPiece(move.To, out _);
 
         type = valid ? MoveType.Simple : null;
 
@@ -46,7 +46,8 @@ internal class PawnMoveValidator : IMoveValidator
     {
         bool valid = move.IsDiagonal()
             && move.OffsetRank == game.TurnPlayer.Player.RankDirection()
-            && game.TryGetTargetPiece(move, out var _);
+            && game.TryGetPiece(move.To, out var target)
+            && target.Value.Player != game.TurnPlayer.Player;
 
         type = valid ? MoveType.Simple : null;
 
@@ -62,7 +63,7 @@ internal class PawnMoveValidator : IMoveValidator
             && move.To == enPassantSquare
             && move.IsDiagonal()
             && move.OffsetRank == game.TurnPlayer.Player.RankDirection()
-            && !game.TryGetTargetPiece(move, out _);
+            && !game.TryGetPiece(move.To, out _);
 
         type = valid ? MoveType.EnPassant : null;
 
